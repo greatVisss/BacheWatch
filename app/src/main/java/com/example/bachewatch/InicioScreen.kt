@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.google.android.gms.maps.model.BitmapDescriptorFactory // <-- Requerido para cambiar el color del pin
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
@@ -32,7 +33,6 @@ fun InicioScreen(
         )
     }
 
-    // El Box permite superponer elementos sobre el mapa
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -42,23 +42,32 @@ fun InicioScreen(
             cameraPositionState = cameraPositionState
         ) {
             baches.forEach { bache ->
+                // --- MARCADORES INTELIGENTES ---
+                // Evaluamos el texto de dangerLevel para asignar el color correspondiente
+                val colorMarcador = when (bache.dangerLevel.lowercase().trim()) {
+                    "bajo" -> BitmapDescriptorFactory.HUE_GREEN   // Verde para peligro bajo
+                    "medio" -> BitmapDescriptorFactory.HUE_ORANGE // Naranja para peligro medio
+                    "alto" -> BitmapDescriptorFactory.HUE_RED     // Rojo para peligro alto
+                    else -> BitmapDescriptorFactory.HUE_RED       // Color por defecto en caso de variaciones
+                }
+
                 Marker(
                     state = MarkerState(
                         position = LatLng(bache.latitude, bache.longitude)
                     ),
                     title = bache.title,
-                    snippet = bache.description
+                    snippet = "⚠️ Peligro: ${bache.dangerLevel} | 👤: ${bache.reporterName}",
+                    icon = BitmapDescriptorFactory.defaultMarker(colorMarcador) // Asigna el color dinámico
                 )
             }
         }
 
         // --- 2. TEXTOS FLOTANDO EN LA PARTE SUPERIOR ---
-        // Usamos una pequeña tarjeta con transparencia para que el texto resalte sobre el mapa
         Card(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 48.dp), // Margen para librar la barra de estado
+                .padding(horizontal = 16.dp, vertical = 48.dp),
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
@@ -82,27 +91,25 @@ fun InicioScreen(
             }
         }
 
-        // --- 3. BOTONES FLOTANDO EN LA PARTE INFERIOR ---
+        // --- 3. BOTONES COMPACTOS FLOTANDO EN EL LADO INFERIOR IZQUIERDO ---
         Column(
             modifier = Modifier
-                .align(Alignment.BottomStart) // <-- Cambiado a BottomStart (Abajo a la izquierda)
-                .width(260.dp) // <-- Ancho reducido para que ocupe solo "un pedacito"
-                .padding(start = 16.dp, bottom = 40.dp), // Margen respecto a los bordes de la pantalla
+                .align(Alignment.BottomStart)
+                .width(260.dp)
+                .padding(start = 16.dp, bottom = 40.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Botón: Agregar Reporte (Más compacto)
             Button(
                 onClick = onAgregarReporteClick,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(48.dp), // Reducido ligeramente de 56 a 48 para que sea más estético
-                shape = RoundedCornerShape(24.dp), // Bordes más redondeados tipo píldora
+                    .height(48.dp),
+                shape = RoundedCornerShape(24.dp),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
             ) {
                 Text("➕ Agregar Reporte", style = MaterialTheme.typography.bodyMedium)
             }
 
-            // Botón: Ver Reportes (Más compacto)
             Button(
                 onClick = onVerReportesClick,
                 modifier = Modifier
