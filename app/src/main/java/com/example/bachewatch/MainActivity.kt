@@ -17,23 +17,26 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.bachewatch.ui.theme.BacheWatchTheme
-import com.google.android.gms.maps.GoogleMap
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.android.gms.maps.model.Marker
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.GoogleMapComposable
 
-import com.example.bachewatch.BachesRepository
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.CameraPositionState
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.android.gms.maps.model.CameraPosition
+import com.google.firebase.firestore.FirebaseFirestore
+import androidx.compose.runtime.LaunchedEffect
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        FirebaseFirestore.getInstance()
+        CloudinaryManager.init(this)
+
         setContent {
             WorldMap()
         }
@@ -44,8 +47,17 @@ class MainActivity : ComponentActivity() {
 fun WorldMap() {
     var isMapLoaded by remember { mutableStateOf(false) }
 
-    val baches = remember {
-        BachesRepository.getBaches()
+    var baches by remember {
+        mutableStateOf<List<Bache>>(emptyList())
+    }
+
+    LaunchedEffect(Unit) {
+        FirestoreManager.obtenerBaches(
+            onSuccess = { baches = it
+            },
+            onFailure = { it.printStackTrace()
+            }
+        )
     }
 
     //CAMBIAR A POSICION REAL DE USUARIO
@@ -62,12 +74,16 @@ fun WorldMap() {
     ) {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState,
             onMapLoaded = { isMapLoaded = true }
         ) {
             baches.forEach { bache ->
                 Marker(
                     state = MarkerState(
-                        position = bache.position
+                        position = LatLng(
+                            bache.latitude,
+                            bache.longitude
+                        )
                     ),
                     title = bache.title,
                     snippet = bache.description
