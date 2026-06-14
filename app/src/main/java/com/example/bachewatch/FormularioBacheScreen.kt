@@ -8,21 +8,34 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import coil.compose.AsyncImage
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
 @Composable
-fun FormularioBacheScreen(onReporteGuardado: () -> Unit) {
+fun FormularioBacheScreen(
+    onAtrasClick: () -> Unit,
+    onReporteGuardado: () -> Unit
+) {
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+
+    // NUEVO CAMPO: Nombre de quien reporta
+    var reporterName by remember { mutableStateOf("") }
 
     var description by remember { mutableStateOf("") }
     var size by remember { mutableStateOf("") }
@@ -62,7 +75,6 @@ fun FormularioBacheScreen(onReporteGuardado: () -> Unit) {
         }
     )
 
-    // El Geocoder se mantiene igual: reacciona en cuanto latitude y longitude tienen un valor
     LaunchedEffect(latitude, longitude) {
         if (latitude != null && longitude != null) {
             withContext(Dispatchers.IO) {
@@ -87,9 +99,32 @@ fun FormularioBacheScreen(onReporteGuardado: () -> Unit) {
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Spacer(modifier = Modifier.height(25.dp))
-        Text("Reportar un Bache", style = MaterialTheme.typography.headlineMedium)
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onAtrasClick) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Regresar al inicio"
+                )
+            }
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Reportar un Bache", style = MaterialTheme.typography.headlineMedium)
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
+
+        // NUEVO TEXTFIELD: Para el nombre del ciudadano
+        OutlinedTextField(
+            value = reporterName,
+            onValueChange = { reporterName = it },
+            label = { Text("Tu Nombre (Ciudadano que reporta)") },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(8.dp))
 
         OutlinedTextField(
             value = description,
@@ -116,10 +151,8 @@ fun FormularioBacheScreen(onReporteGuardado: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        // NUEVO: Botón explícito para pedir la ubicación
         Button(
             onClick = {
-                // Al hacer clic, verificamos permisos e intentamos obtener la ubicación
                 if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                     fusedLocationClient.lastLocation.addOnSuccessListener { location ->
                         if (location != null) {
@@ -141,7 +174,6 @@ fun FormularioBacheScreen(onReporteGuardado: () -> Unit) {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Texto que muestra el resultado de la ubicación
         if (addressName != null) {
             Text(text = "📍 $addressName", color = MaterialTheme.colorScheme.primary)
         } else if (latitude != null && longitude != null) {
@@ -161,17 +193,31 @@ fun FormularioBacheScreen(onReporteGuardado: () -> Unit) {
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
         ) {
-            Text(if (imageUri != null) "📸 Foto adjuntada (Cambiar)" else "📸 Añadir Evidencia Fotográfica")
+            Text(if (imageUri != null) "📸 Cambiar Fotografía" else "📸 Añadir Evidencia Fotográfica")
+        }
+
+        if (imageUri != null) {
+            Spacer(modifier = Modifier.height(16.dp))
+            AsyncImage(
+                model = imageUri,
+                contentDescription = "Vista previa del bache",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(280.dp)
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
         }
 
         Spacer(modifier = Modifier.weight(1f))
 
         Button(
             onClick = {
-                if (latitude != null && imageUri != null) {
-                    Toast.makeText(context, "Listo para conectar con Firebase", Toast.LENGTH_SHORT).show()
+                // Validación actualizada para incluir el nombre del reportero
+                if (description.isNotEmpty() && size.isNotEmpty() && dangerLevel.isNotEmpty() && reporterName.isNotEmpty() && latitude != null && imageUri != null) {
+                    Toast.makeText(context, "Listo para Firebase! Reportado por: $reporterName en $addressName", Toast.LENGTH_LONG).show()
                 } else {
-                    Toast.makeText(context, "Faltan datos obligatorios, foto o ubicación", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Faltan datos (nombre, título, foto o ubicación)", Toast.LENGTH_SHORT).show()
                 }
             },
             modifier = Modifier.fillMaxWidth()
