@@ -64,6 +64,7 @@ dependencies {
 
     //MAPS GOOGLE
     implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-location:21.2.0")
 
     // KTX for the Maps SDK for Android library
     implementation("com.google.maps.android:maps-ktx:5.0.0")
