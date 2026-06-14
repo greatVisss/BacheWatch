@@ -7,6 +7,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,8 +18,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.example.bachewatch.ui.theme.BacheWatchTheme
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.GoogleMapComposable
@@ -38,13 +43,29 @@ class MainActivity : ComponentActivity() {
         CloudinaryManager.init(this)
 
         setContent {
-            WorldMap()
+            BacheWatchTheme {
+                // Variable de estado para controlar qué pantalla se muestra
+                var mostrarFormulario by remember { mutableStateOf(false) }
+
+                if (mostrarFormulario) {
+                    // Si es true, mostramos la pantalla del formulario
+                    FormularioBacheScreen(
+                        onReporteGuardado = {
+                            // Cuando terminemos, ocultamos el formulario para volver al mapa
+                            mostrarFormulario = false
+                        }
+                    )
+                } else {
+                    // Si es false, mostramos el mapa y le pasamos la acción para abrir el form
+                    WorldMap(onAgregarBacheClick = { mostrarFormulario = true })
+                }
+            }
         }
     }
 }
 
 @Composable
-fun WorldMap() {
+fun WorldMap(onAgregarBacheClick: () -> Unit) { // <-- Agregamos el parámetro de acción
     var isMapLoaded by remember { mutableStateOf(false) }
 
     var baches by remember {
@@ -53,10 +74,8 @@ fun WorldMap() {
 
     LaunchedEffect(Unit) {
         FirestoreManager.obtenerBaches(
-            onSuccess = { baches = it
-            },
-            onFailure = { it.printStackTrace()
-            }
+            onSuccess = { baches = it },
+            onFailure = { it.printStackTrace() }
         )
     }
 
@@ -69,8 +88,7 @@ fun WorldMap() {
     }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
+        modifier = Modifier.fillMaxSize()
     ) {
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
@@ -89,6 +107,17 @@ fun WorldMap() {
                     snippet = bache.description
                 )
             }
+        }
+
+        // --- BOTÓN FLOTANTE AÑADIDO AQUÍ ---
+        FloatingActionButton(
+            onClick = onAgregarBacheClick,
+            modifier = Modifier
+                .align(Alignment.BottomEnd) // Lo posiciona abajo a la derecha
+                .padding(16.dp)
+                .padding(bottom = 32.dp) // Un poco de espacio extra por la barra de navegación del sistema
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = "Reportar Bache")
         }
     }
 }

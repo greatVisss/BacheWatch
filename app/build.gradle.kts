@@ -77,4 +77,7 @@ dependencies {
     implementation("com.google.maps.android:maps-compose-utils:$mapsComposeVersion")
     // Google Maps Compose widgets library
     implementation("com.google.maps.android:maps-compose-widgets:$mapsComposeVersion")
+
+    //Permite ver en vista previa la foto
+    implementation("io.coil-kt:coil-compose:2.6.0")
 }
