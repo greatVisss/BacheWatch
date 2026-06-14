@@ -4,44 +4,91 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.bachewatch.ui.theme.BacheWatchTheme
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.GoogleMapComposable
+
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.CameraPositionState
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.firebase.firestore.FirebaseFirestore
+import androidx.compose.runtime.LaunchedEffect
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        FirebaseFirestore.getInstance()
+        CloudinaryManager.init(this)
+
         setContent {
-            BacheWatchTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
-            }
+            WorldMap()
         }
     }
 }
 
 @Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+fun WorldMap() {
+    var isMapLoaded by remember { mutableStateOf(false) }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    BacheWatchTheme {
-        Greeting("Android")
+    var baches by remember {
+        mutableStateOf<List<Bache>>(emptyList())
+    }
+
+    LaunchedEffect(Unit) {
+        FirestoreManager.obtenerBaches(
+            onSuccess = { baches = it
+            },
+            onFailure = { it.printStackTrace()
+            }
+        )
+    }
+
+    //CAMBIAR A POSICION REAL DE USUARIO
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(
+            LatLng(19.432608, -99.133209),
+            14f
+        )
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState,
+            onMapLoaded = { isMapLoaded = true }
+        ) {
+            baches.forEach { bache ->
+                Marker(
+                    state = MarkerState(
+                        position = LatLng(
+                            bache.latitude,
+                            bache.longitude
+                        )
+                    ),
+                    title = bache.title,
+                    snippet = bache.description
+                )
+            }
+        }
     }
 }
