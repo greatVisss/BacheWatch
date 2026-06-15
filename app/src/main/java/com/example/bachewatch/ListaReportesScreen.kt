@@ -71,14 +71,14 @@ fun ListaReportesScreen(
             }
             .addOnFailureListener {
                 cargando = false
-                Toast.makeText(context, "Error al cargar el historial de Firebase", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Error al cargar el historial", Toast.LENGTH_SHORT).show()
             }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Historial de Reportes", fontWeight = FontWeight.Bold) },
+                title = { Text("Reportes", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onAtrasClick) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Regresar")

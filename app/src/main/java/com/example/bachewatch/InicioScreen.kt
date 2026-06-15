@@ -1,12 +1,17 @@
 package com.example.bachewatch
 
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.BitmapDescriptorFactory // <-- Requerido para cambiar el color del pin
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
@@ -18,10 +23,30 @@ fun InicioScreen(
     onVerReportesClick: () -> Unit
 ) {
     var baches by remember { mutableStateOf<List<Bache>>(emptyList()) }
+    var userLocation by remember { mutableStateOf<LatLng?>(null) }
+
+    val context = LocalContext.current
+
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+
+    var hasLocationPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        )
+    }
 
     LaunchedEffect(Unit) {
         FirestoreManager.obtenerBaches(
-            onSuccess = { baches = it },
+            onSuccess = { baches = it
+                it.forEach { bache ->
+                            println(
+                                "BACHE: ${bache.title} (${bache.latitude}, ${bache.longitude})"
+                                )
+                            }
+                        },
             onFailure = { it.printStackTrace() }
         )
     }
@@ -29,8 +54,30 @@ fun InicioScreen(
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
             LatLng(19.432608, -99.133209),
-            14f
+            17f
         )
+    }
+
+    LaunchedEffect(Unit) {
+        if (ContextCompat.checkSelfPermission(
+                context,Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
+        ) {
+            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                if(location != null){
+                    val latLng = LatLng(
+                        location.latitude,
+                        location.longitude
+                    )
+                    userLocation = latLng
+
+                    cameraPositionState.position =
+                        CameraPosition.fromLatLngZoom(
+                            latLng,
+                            17f
+                        )
+                }
+            }
+        }
     }
 
     Box(
@@ -39,7 +86,8 @@ fun InicioScreen(
         // --- 1. EL MAPA OCUPA TODA LA PANTALLA ---
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
-            cameraPositionState = cameraPositionState
+            cameraPositionState = cameraPositionState,
+            properties = MapProperties(isMyLocationEnabled = hasLocationPermission)
         ) {
             baches.forEach { bache ->
                 // --- MARCADORES INTELIGENTES ---

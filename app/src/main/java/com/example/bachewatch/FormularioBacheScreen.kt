@@ -1,6 +1,7 @@
 package com.example.bachewatch
 
 import android.Manifest
+import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Geocoder
 import android.net.Uri
@@ -32,10 +33,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import coil.compose.AsyncImage
 import com.google.android.gms.location.LocationServices
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -63,6 +66,30 @@ fun FormularioBacheScreen(
     var imageUri by remember { mutableStateOf<Uri?>(null) }
 
     val scrollState = rememberScrollState()
+
+    var mostrarSelectorMapa by remember { mutableStateOf(false) }
+    val photoUri = remember { mutableStateOf<Uri?>(null) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) {
+        success ->
+            if(success){
+                imageUri = photoUri.value
+            }
+        }
+
+    if (mostrarSelectorMapa) {
+        SeleccionUbicacionScreen(
+            onLocationSelected = { latLng ->
+                latitude = latLng.latitude
+                longitude = latLng.longitude
+                mostrarSelectorMapa = false
+            },
+            onCancel = {
+                mostrarSelectorMapa = false
+            }
+        )
+        return
+    }
 
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -144,7 +171,7 @@ fun FormularioBacheScreen(
                         RoundedCornerShape(24.dp)
                     )
                     .clickable { imagePickerLauncher.launch("image/*") },
-                contentAlignment = Alignment.Center
+                contentAlignment = Alignment.Center,
             ) {
                 if (imageUri != null) {
                     AsyncImage(
@@ -184,6 +211,16 @@ fun FormularioBacheScreen(
                 }
             }
 
+            Button(modifier = Modifier.padding(horizontal = 40.dp).fillMaxWidth(),
+                onClick = {
+                    val uri = createImageUri(context)
+                    photoUri.value = uri
+                    cameraLauncher.launch(uri)
+                }
+            ) {
+                Text("Abrir Cámara")
+            }
+
             // 2. TARJETA DE UBICACIÓN
             Card(
                 shape = RoundedCornerShape(16.dp),
@@ -207,7 +244,7 @@ fun FormularioBacheScreen(
                     Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            "Ubicación actual",
+                            "Ubicación",
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -217,26 +254,37 @@ fun FormularioBacheScreen(
                             style = MaterialTheme.typography.bodyMedium
                         )
                     }
-                    Button(
-                        onClick = {
-                            if (ContextCompat.checkSelfPermission(
-                                    context,
-                                    Manifest.permission.ACCESS_FINE_LOCATION
-                                ) == PackageManager.PERMISSION_GRANTED
-                            ) {
-                                fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                                    if (location != null) {
-                                        latitude = location.latitude
-                                        longitude = location.longitude
+                    Column() {
+                        Button(
+                            onClick = {
+                                if (ContextCompat.checkSelfPermission(
+                                        context,
+                                        Manifest.permission.ACCESS_FINE_LOCATION
+                                    ) == PackageManager.PERMISSION_GRANTED
+                                ) {
+                                    fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                                        if (location != null) {
+                                            latitude = location.latitude
+                                            longitude = location.longitude
+                                        }
                                     }
+                                } else {
+                                    locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
                                 }
-                            } else {
-                                locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+                            },
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(if (latitude == null) "Detectar" else "Actualizar")
+                        }
+                        Spacer(modifier = Modifier.height(5.dp))
+
+                        TextButton(
+                            onClick = {
+                                mostrarSelectorMapa = true
                             }
-                        },
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Text(if (latitude == null) "Detectar" else "Actualizar")
+                        ) {
+                            Text("Seleccionar")
+                        }
                     }
                 }
             }
@@ -421,8 +469,22 @@ fun FormularioBacheScreen(
                 shape = RoundedCornerShape(16.dp),
                 elevation = ButtonDefaults.buttonElevation(6.dp)
             ) {
-                Text("🚀 Subir Reporte", style = MaterialTheme.typography.titleMedium)
+                Text("Subir Reporte", style = MaterialTheme.typography.titleMedium)
             }
         }
     }
+}
+
+fun createImageUri(context: Context): Uri {
+
+    val file = File(
+        context.cacheDir,
+        "photo_${System.currentTimeMillis()}.jpg"
+    )
+
+    return FileProvider.getUriForFile(
+        context,
+        "${context.packageName}.provider",
+        file
+    )
 }
