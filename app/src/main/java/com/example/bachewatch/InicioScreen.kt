@@ -84,7 +84,7 @@ fun InicioScreen(
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Monitoreo y reporte ciudadano de desperfectos viales.",
+                    text = "Reporte de baches viales",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -62,6 +62,7 @@ dependencies {
     implementation("com.cloudinary:cloudinary-android:3.0.2")
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-common")
+    implementation("com.google.firebase:firebase-auth")
 
     //MAPS GOOGLE
     implementation("com.google.android.gms:play-services-maps:18.2.0")

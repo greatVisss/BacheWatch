@@ -21,10 +21,20 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             BacheWatchTheme {
-                // Estado para controlar qué pantalla completa está activa
-                var pantallaActual by remember { mutableStateOf("inicio") }
+                var pantallaActual by remember { mutableStateOf("login") }
+
+                // NUEVA VARIABLE: Guarda el nombre del usuario activo en esta sesión
+                var usuarioLogueado by remember { mutableStateOf("") }
 
                 when (pantallaActual) {
+                    "login" -> {
+                        LoginScreen(
+                            onLoginSuccess = { nombre ->
+                                usuarioLogueado = nombre // <-- Guardamos el nombre que viene del Login
+                                pantallaActual = "inicio"
+                            }
+                        )
+                    }
                     "inicio" -> {
                         InicioScreen(
                             onAgregarReporteClick = { pantallaActual = "formulario" },
@@ -32,13 +42,14 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     "formulario" -> {
+                        // MODIFICADO: Le pasamos el usuario logueado a la actividad del formulario
                         FormularioBacheScreen(
                             onAtrasClick = { pantallaActual = "inicio" },
                             onReporteGuardado = { pantallaActual = "inicio" }
                         )
                     }
                     "historial" -> {
-                        // Carga el historial limpio que creamos anteriormente
+                        // El historial ya lee de Firebase de forma independiente
                         ListaReportesScreen(
                             onAtrasClick = { pantallaActual = "inicio" }
                         )

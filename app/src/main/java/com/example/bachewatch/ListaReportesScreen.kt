@@ -98,13 +98,22 @@ fun ListaReportesScreen(
 fun BacheItemCard(
     bache: Bache
 ) {
-    // 1. Extraemos y evaluamos los datos de forma segura fuera de la interfaz
+    // 1. Extraemos y evaluamos los datos de forma segura
     val nombreCiudadano = if (bache.reporterName.isNotEmpty()) bache.reporterName else "Ciudadano Anónimo"
     val peligro = if (bache.dangerLevel.isNotEmpty()) bache.dangerLevel else "N/A"
     val tamano = if (bache.size.isNotEmpty()) bache.size else "N/A"
-
-    // Nota: Asegúrate de que 'addressName' esté declarada en tu BacheModel.kt
     val ubicacion = if (bache.addressName.isNotEmpty()) bache.addressName else "Dirección no registrada (${bache.latitude}, ${bache.longitude})"
+
+    // 2. NUEVO: Convertimos los milisegundos de Firebase a una fecha legible
+    val fechaFormateada = remember(bache.createdAt) {
+        if (bache.createdAt > 0L) {
+            // Define el formato, ej: "14/06/2026 a las 15:30"
+            val sdf = java.text.SimpleDateFormat("dd/MM/yyyy 'a las' HH:mm", java.util.Locale.getDefault())
+            sdf.format(java.util.Date(bache.createdAt))
+        } else {
+            "Fecha desconocida"
+        }
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -131,12 +140,19 @@ fun BacheItemCard(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                // 2. Ahora usamos nuestras variables locales súper limpias
+                // NUEVO: Mostramos el nombre y justo debajo la fecha formateada
                 Text(
                     text = "👤 Reportado por: $nombreCiudadano",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+
+                Text(
+                    text = "🕒 Subido el: $fechaFormateada",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
 
                 if (!bache.description.isNullOrEmpty()) {
