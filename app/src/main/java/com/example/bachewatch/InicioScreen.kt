@@ -104,7 +104,7 @@ fun InicioScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(25.dp),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
             ) {
                 Text("➕ Agregar Reporte", style = MaterialTheme.typography.bodyMedium)
